@@ -54,17 +54,15 @@ if __name__ == '__main__':
 
     # Load the CIFAR-10 dataset
     X_train, y_train, X_test, y_test = load_cifar10_data()
-    #X_train, y_train = X_train[:258], y_train[:258]
+    
+    train_size = len(X_train)
+    X_train, y_train = X_train[:train_size], y_train[:train_size]
 
     # Load a ResNet model (without the top layer, and with input shape for CIFAR-10)
     model = ResNet50(weights=None, input_shape=(32, 32, 3), classes=10)
-
-    # Configure the optimizer
-    lr = 0.01
-    optimizer = SGD(learning_rate=lr, momentum=0.9)
-    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-
-    # Configure the Data Augmentation
+    
+    
+    # Configura o Data Augmentation.
     datagen = ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
         samplewise_center=False,  # set each sample mean to 0
@@ -75,12 +73,16 @@ if __name__ == '__main__':
         width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
         height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
         horizontal_flip=True,  # randomly flip images
-        vertical_flip=False,  # randomly flip images
-    )
+        vertical_flip=False)  # randomly flip images
     datagen.fit(X_train)
 
+    # Configure the optimizer
+    lr = 0.01
+    optimizer = SGD(learning_rate=lr, momentum=0.9)
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+
     # Set up learning rate scheduler
-    lr_scheduler_callback = tf.keras.callbacks.LearningRateScheduler(lr_scheduler)
+    lr_scheduler_callback = LearningRateScheduler(lr_scheduler)
 
     # Set up the ModelCheckpoint callback to save the model every n epochs
     checkpoint_callback = ModelCheckpoint(
@@ -90,18 +92,25 @@ if __name__ == '__main__':
         verbose=1
     )
     
+    callbacks = [lr_scheduler_callback, checkpoint_callback]
+
+    # Set manual epoch loop
     epochs = 10
-    # Train the model
-    model.fit(datagen.flow(X_train, y_train, batch_size=128),
-              steps_per_epoch=len(X_train) // 128 + 2,
-              epochs=epochs,
-              validation_data=(X_test, y_test),
-              callbacks=[lr_scheduler_callback, checkpoint_callback])
+    batch_size = 128
+    steps_per_epoch = len(X_train) // batch_size
 
-    # Save the model weights after training
-    model.save_weights(os.path.join(weights, f'{model_name}_{dataset_name}_{epochs}.weights.h5'))
+    # Epoch loop
+    for epoch in range(1, epochs+1):
+        model.fit(datagen.flow(X_train, y_train, batch_size=batch_size),
+                            steps_per_epoch=steps_per_epoch,
+                            epochs=epochs, initial_epoch=epoch - 1,
+                            verbose='auto', callbacks=callbacks)
 
-    # Evaluate model
+        if epoch % 5 == 0:
+            acc = accuracy_score(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test), axis=1))
+            print('Accuracy [{:.4f}]'.format(acc), flush=True)
+
+    # Evaluate model after training
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
     print(f'Final accuracy: {accuracy:.4f}')
