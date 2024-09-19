@@ -1,6 +1,9 @@
 # VS Code
 .vscode
 
+# Local files
+weights/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
