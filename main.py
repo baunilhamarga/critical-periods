@@ -54,8 +54,9 @@ if __name__ == '__main__':
 
     # Load the CIFAR-10 dataset
     X_train, y_train, X_test, y_test = load_cifar10_data()
+    #X_train, y_train = X_train[:258], y_train[:258]
 
-    # Load a pre-trained ResNet model (without the top layer, and with input shape for CIFAR-10)
+    # Load a ResNet model (without the top layer, and with input shape for CIFAR-10)
     model = ResNet50(weights=None, input_shape=(32, 32, 3), classes=10)
 
     # Configure the optimizer
@@ -83,16 +84,16 @@ if __name__ == '__main__':
 
     # Set up the ModelCheckpoint callback to save the model every n epochs
     checkpoint_callback = ModelCheckpoint(
-        filepath=os.path.join(weights, f"{model_name}_epoch_{{epoch:02d}}.weights.h5"),
+        filepath=os.path.join(weights, f"{model_name}_{dataset_name}_epoch_{{epoch:02d}}.weights.h5"),
         save_weights_only=True,  # Save only the weights
         save_freq='epoch',  # Save at the end of every epoch
         verbose=1
     )
-
+    
     epochs = 10
     # Train the model
     model.fit(datagen.flow(X_train, y_train, batch_size=128),
-              steps_per_epoch=len(X_train) // 128,
+              steps_per_epoch=len(X_train) // 128 + 2,
               epochs=epochs,
               validation_data=(X_test, y_test),
               callbacks=[lr_scheduler_callback, checkpoint_callback])
