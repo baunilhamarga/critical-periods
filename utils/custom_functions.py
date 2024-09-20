@@ -875,4 +875,19 @@ def load_or_create_weights(model, weights_path):
         print(f"Creating random starting weights at {weights_path}.")
         model.save_weights(weights_path)
             
-        
+def subsampling(X_train, y_train, p=0.1):
+    from sklearn.model_selection import StratifiedShuffleSplit
+    # Subsample 10% of the training data to avoid memory constraints
+    sss = StratifiedShuffleSplit(n_splits=1, train_size=0.1, random_state=0)
+    placeholder = np.zeros(X_train.shape[0])
+    for train_index, _ in sss.split(placeholder, y_train):
+
+        X_train_10p = np.zeros((len(train_index), X_train.shape[1], X_train.shape[2], X_train.shape[3]), np.float32)
+        y_train_10p = np.zeros((len(train_index), y_train.shape[1]))
+
+        for i in range(0, len(train_index)):
+            X_train_10p[i] = X_train[train_index[i]]
+            y_train_10p[i] = y_train[train_index[i]]
+        break
+
+    return X_train_10p, y_train_10p
