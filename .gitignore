@@ -3,6 +3,7 @@
 
 # Local files
 weights/
+temp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
