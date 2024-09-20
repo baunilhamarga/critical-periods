@@ -118,15 +118,16 @@ if __name__ == '__main__':
     callbacks = [lr_scheduler_callback, checkpoint_callback]
 
     # Set manual epoch loop
-    epochs = 10
+    epochs = 200
     batch_size = 128
     steps_per_epoch = len(X_train) // batch_size
 
     # Epoch loop
     for epoch in range(1, epochs+1):
+        print(f"Epoch {epoch}/{epochs}", flush=True)
         model.fit(datagen.flow(X_train, y_train, batch_size=batch_size),
                   steps_per_epoch=steps_per_epoch,
-                  epochs=epochs, initial_epoch=epoch - 1,
+                  epochs=epoch, initial_epoch=epoch - 1,
                   verbose='auto', callbacks=callbacks)
 
         if epoch % 5 == 0:
