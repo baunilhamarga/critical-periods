@@ -8,3 +8,8 @@ log_and_run() {
 }
 
 log_and_run
+
+# To stop run
+# $ ps aux | grep 'python main.py'
+# Process will be shown with 'user PID...'
+# $ kill PID
