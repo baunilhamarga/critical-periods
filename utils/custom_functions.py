@@ -1,6 +1,9 @@
 import numpy as np
 import random
 import os
+from sklearn.metrics._classification import accuracy_score
+from tensorflow.keras.callbacks import Callback
+import tensorflow as tf
 
 def load_model(architecture_file='', weights_file=''):
     import keras
@@ -891,3 +894,58 @@ def subsampling(X_train, y_train, p=0.1):
         break
 
     return X_train_10p, y_train_10p
+
+def scheduler(epoch, lr):
+    if epoch == 100 or epoch == 150:
+        return lr/10
+
+    return lr
+
+class LRLogger(Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        if logs is None or 'learning_rate' not in logs:
+            return
+        lr = logs.get('learning_rate')
+        print(f'Epoch {epoch + 1}, Learning Rate: {lr:.7f}')
+
+def finetuning(model, X_train, y_train, X_test, y_test):
+    from tensorflow.keras.callbacks import LearningRateScheduler
+    import keras
+    
+    lr = 0.01
+    lr_scheduler = LearningRateScheduler(scheduler)
+    lr_logger = LRLogger()
+
+    sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+
+    acc = accuracy_score(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test, verbose=0), axis=1))
+    print('Accuracy before fine-tuning  [{:.4f}]'.format(acc), flush=True)
+
+    for ep in range(0, 200):
+
+        ### IMPLEMENTAR A FUNÇÃO DATA_AUGMENTATION
+        ### Se X_train tem 5k de amostras, após o loop com k = 6 X_tmp deverá ter 30k (mesmo para y_train e y_tmp)
+
+        k = 6
+        y_tmp = y_train
+        X_tmp = data_augmentation(X_train)
+        for _ in range(k-1):
+            y_tmp = np.concatenate((y_tmp, y_train))
+            X_tmp = np.concatenate((X_tmp, data_augmentation(X_train)))
+
+        with tf.device("CPU"):
+            X_tmp = tf.data.Dataset.from_tensor_slices((X_tmp, y_tmp)).shuffle(4 * 128).batch(128)
+
+        model.fit(X_tmp, batch_size=128,
+                  callbacks=[lr_scheduler, lr_logger], verbose=2,
+                  epochs=ep, initial_epoch=ep - 1)
+
+        if ep % 5 == 0:
+            acc = accuracy_score(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test, verbose=0), axis=1))
+            print('Accuracy [{:.4f}]'.format(acc), flush=True)
+
+    return model
+
+def data_augmentation(X):
+    return np.array(X)
