@@ -4,7 +4,8 @@ from sklearn.metrics import accuracy_score
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 import os
 import argparse
-from models import custom_models
+from models import ResNetN
+import keras
 from utils import custom_functions as func
 from utils import custom_callbacks as callbacks
 
@@ -13,7 +14,7 @@ if __name__ == '__main__':
     func.set_seeds(seed)  # Set seeds for repeatability
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--architecture', type=str, default='CustomModel1')
+    parser.add_argument('--architecture', type=str, default='ResNet44')
     parser.add_argument('--dataset', type=str, default='CIFAR10')
     parser.add_argument('--weights', type=str, default='')
     parser.add_argument('--model_name', type=str, default='')
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     X_train, y_train = X_train[:train_size], y_train[:train_size]
 
     # Load a model
-    model = custom_models.build_model(model_name, input_shape=(32, 32, 3), num_classes=10)
+    model = ResNetN.build_model(model_name, input_shape=(32, 32, 3), num_classes=10, N_layers=44)
 
     # Path to random starting weights
     random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
@@ -46,13 +47,15 @@ if __name__ == '__main__':
     func.load_or_create_weights(model, random_weights_path)
     
     # Configure the optimizer
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    lr = 0.01
+    sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     # Configurr Data Augmentation
     datagen = func.generate_data_augmentation(X_train)
 
     # Set up learning rate scheduler
-    lr_scheduler_callback = LearningRateScheduler(func.lr_scheduler)
+    lr_scheduler_callback = LearningRateScheduler(func.scheduler)
 
     # Set up the ModelCheckpoint callback to save the model every n epochs
     checkpoint_callback = ModelCheckpoint(
@@ -68,7 +71,7 @@ if __name__ == '__main__':
     epochs = 200
     batch_size = 128
     steps_per_epoch = len(X_train) // batch_size
-    verbose = 2 # 0 = silent, 1 = progress bar, 2 = one line per epoch
+    verbose = 1 # 0 = silent, 1 = progress bar, 2 = one line per epoch
 
     # Epoch loop
     for epoch in range(1, epochs+1):
@@ -77,10 +80,6 @@ if __name__ == '__main__':
                   steps_per_epoch=steps_per_epoch,
                   epochs=epoch, initial_epoch=epoch - 1,
                   verbose=verbose, callbacks=callbacks, validation_data = (X_test, y_test))
-
-        if epoch % 5 == 0:
-            acc = model.evaluate(X_test, y_test)[1]
-            print(f'Test Accuracy of Model: {acc}', flush=True)
 
     # Evaluate model after training
     y_pred = model.predict(X_test)
