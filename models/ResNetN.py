@@ -7,7 +7,6 @@ from tensorflow.keras.models import Model
 import tensorflow.keras.utils as keras_utils
 import numpy as np
 import random
-import matplotlib.pyplot as plt
 from sklearn.metrics._classification import accuracy_score
 
 import sys
