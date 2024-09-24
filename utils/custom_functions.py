@@ -4,12 +4,27 @@ import os
 from sklearn.metrics._classification import accuracy_score
 from tensorflow.keras.callbacks import Callback
 import tensorflow as tf
+from sklearn.model_selection import StratifiedShuffleSplit
+import keras
+from keras.utils.generic_utils import CustomObjectScope
+from keras import backend as K
+from sklearn.model_selection import train_test_split
+from keras.applications.mobilenet import DepthwiseConv2D
+from keras.layers.pooling import GlobalMaxPooling2D, GlobalAveragePooling2D, MaxPooling2D, AveragePooling2D
+from keras.layers import Dense, Dropout, Conv2D, Flatten, Activation, BatchNormalization, Add
+from keras.layers import Input
+from keras.models import Model
+from keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Flatten
+from keras.layers import Input, BatchNormalization, Activation
+import matplotlib.pyplot as plt
+from tensorflow.keras.callbacks import LearningRateScheduler    
+
+
+
+
+
 
 def load_model(architecture_file='', weights_file=''):
-    import keras
-    from keras.utils.generic_utils import CustomObjectScope
-    from keras import backend as K
-
     def _hard_swish(x):
         return x * K.relu(x + 3.0, max_value=6.0) / 6.0
 
@@ -33,7 +48,6 @@ def load_model(architecture_file='', weights_file=''):
     return model
 
 def save_model(file_name='', model=None):
-    import keras
     print('Salving architecture and weights in {}'.format(file_name))
 
     model.save_weights(file_name + '.h5')
@@ -41,8 +55,6 @@ def save_model(file_name='', model=None):
         f.write(model.to_json())
 
 def cifar_vgg_data(debug=False, validation_set=False, cifar_type=10, train_size=1.0, test_size=1.0):
-    import keras
-    from sklearn.model_selection import train_test_split
     print('Debuging Mode') if debug is True else print('Real Mode')
 
     if cifar_type == 10:
@@ -87,7 +99,6 @@ def cifar_vgg_data(debug=False, validation_set=False, cifar_type=10, train_size=
         return X_train, y_train, X_test, y_test, X_val, y_val
 
 def cifar_resnet_data(debug=False, validation_set=False):
-    import keras
     print('Debuging Mode') if debug is True else print('Real Mode')
 
     (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
@@ -124,9 +135,6 @@ def cifar_resnet_data(debug=False, validation_set=False):
 
 def food_data(subtract_pixel_mean=False,
                    path='../Food-101/food-101_128x128.npz', train_size=1.0, test_size=1.0):
-    import keras
-    from sklearn.model_selection import train_test_split
-
     tmp = np.load(path)
     X_train, y_train, X_test, y_test = (tmp['X_train'], tmp['y_train'], tmp['X_test'], tmp['y_test'])
 
@@ -153,8 +161,6 @@ def food_data(subtract_pixel_mean=False,
 
 def image_net_data(load_train=True, load_test=True, subtract_pixel_mean=False,
                    path='', train_size=1.0, test_size=1.0):
-    import keras
-    from sklearn.model_selection import train_test_split
     X_train, y_train, X_test, y_test = (None, None, None, None)
     if load_train is True:
         tmp = np.load(path+'imagenet_train.npz')
@@ -191,9 +197,6 @@ def image_net_data(load_train=True, load_test=True, subtract_pixel_mean=False,
 
 def image_net_tiny_data(subtract_pixel_mean=False,
                    path='../../datasets/ImageNetTiny/TinyImageNet.npz', train_size=1.0, test_size=1.0):
-    import keras
-    from sklearn.model_selection import train_test_split
-
     tmp = np.load(path)
     X_train, y_train, X_test, y_test = (tmp['X_train'], tmp['y_train'], tmp['X_test'], tmp['y_test'])
 
@@ -219,7 +222,6 @@ def image_net_tiny_data(subtract_pixel_mean=False,
     return X_train, y_train, X_test, y_test
 
 def optimizer_compile(model, model_type='other'):
-    import keras
     if model_type == 'VGG16':
         sgd = keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
         model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
@@ -258,7 +260,6 @@ def lr_scheduler(epoch, lr):
 
 def generate_data_augmentation(X_train):
     print('Using real-time data augmentation.')
-    import tensorflow as tf
     datagen = tf.keras.preprocessing.image.ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
         samplewise_center=False,  # set each sample mean to 0
@@ -295,8 +296,6 @@ def save_data_augmentation(X_train, y_train, batch_size=256, file_name=''):
         np.savez_compressed(file_name, X=X_train, y=y_train)
 
 def count_filters(model):
-    import keras
-    from keras.applications.mobilenet import DepthwiseConv2D
     n_filters = 0
     #Model contains only Conv layers
     for layer_idx in range(1, len(model.layers)):
@@ -319,8 +318,6 @@ def count_filters(model):
     return n_filters
 
 def count_filters_layer(model):
-    import keras
-    from keras.applications.mobilenet import DepthwiseConv2D
     n_filters = ''
     #Model contains only Conv layers
     for layer_idx in range(1, len(model.layers)):
@@ -336,7 +333,6 @@ def count_filters_layer(model):
     return n_filters
 
 def compute_flops(model):
-    import keras
     total_flops =0
     flops_per_layer = []
 
@@ -389,11 +385,6 @@ def compute_flops(model):
     return total_flops, flops_per_layer
 
 def generate_conv_model(model, input_shape=(32, 32,3), model_type='VGG16'):
-    from keras.layers.pooling import GlobalMaxPooling2D, GlobalAveragePooling2D, MaxPooling2D, AveragePooling2D
-    from keras.layers import Dense, Dropout, Conv2D, Flatten, Activation, BatchNormalization, Add
-    from keras.layers import Input
-    from keras.models import Model
-
     model = model.get_layer(index=1)
 
     if model_type == 'VGG16':
@@ -596,9 +587,6 @@ def generate_conv_model(model, input_shape=(32, 32,3), model_type='VGG16'):
 def convert_model(model, inp=None):
     #This fuction convertes a model from Input->Model -> Dense -> Dese
     # to Input -> Conv2D->...->Dense->Dense
-    import keras
-    from keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Flatten
-    from keras.layers import Input, BatchNormalization, Activation
 
     if inp is None:
         inp = (model.inputs[0].shape.dims[1].value,
@@ -791,7 +779,6 @@ def data_augmentation(X, padding=4):
         else: #random crop on the flipped image
             X_out[i] = random_crop(np.flip(padded_sample, axis=1), (x, y))
 
-        # import matplotlib.pyplot as plt
         # plt.imshow(X_out[i])
 
     return X_out
@@ -825,7 +812,6 @@ def cutout(img):
     return img
 
 def memory_usage(batch_size, model):
-    from keras import backend as K
     #Taken from #https://stackoverflow.com/questions/43137288/how-to-determine-needed-memory-of-keras-model
     shapes_mem_count = 0
     for l in model.layers:
@@ -850,7 +836,6 @@ def memory_usage(batch_size, model):
     return gbytes
 
 def count_depth(model):
-    import keras
     depth = 0
     for i in range(0, len(model.layers)):
         layer = model.get_layer(index=i)
@@ -861,7 +846,6 @@ def count_depth(model):
 
 # Set seeds for repeatability
 def set_seeds(seed=12227):
-    import tensorflow as tf
     np.random.seed(seed)
     tf.random.set_seed(seed)
 
@@ -879,7 +863,6 @@ def load_or_create_weights(model, weights_path):
         model.save_weights(weights_path)
             
 def subsampling(X_train, y_train, p=0.1):
-    from sklearn.model_selection import StratifiedShuffleSplit
     # Subsample 10% of the training data to avoid memory constraints
     sss = StratifiedShuffleSplit(n_splits=1, train_size=0.1, random_state=0)
     placeholder = np.zeros(X_train.shape[0])
@@ -909,9 +892,6 @@ class LRLogger(Callback):
         print(f'Epoch {epoch + 1}, Learning Rate: {lr:.7f}')
 
 def finetuning(model, X_train, y_train, X_test, y_test):
-    from tensorflow.keras.callbacks import LearningRateScheduler
-    import keras
-    
     lr = 0.01
     lr_scheduler = LearningRateScheduler(scheduler)
     lr_logger = LRLogger()
