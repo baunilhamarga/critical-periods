@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 import os
@@ -33,9 +32,6 @@ if __name__ == '__main__':
 
     # Load the CIFAR-10 dataset
     X_train, y_train, X_test, y_test = func.cifar_resnet_data()
-    
-    train_size = len(X_train)
-    X_train, y_train = X_train[:train_size], y_train[:train_size]
 
     # Load a model
     model = ResNetN.build_model(model_name, input_shape=(32, 32, 3), num_classes=10, N_layers=44)
@@ -67,20 +63,17 @@ if __name__ == '__main__':
     
     callbacks = [lr_scheduler_callback, checkpoint_callback]
 
-    # Set manual epoch loop
+    # Set manual epoch loop configuration
     epochs = 200
     batch_size = 16
-    steps_per_epoch = len(X_train) // batch_size
     verbose = 2 # 0 = silent, 1 = progress bar, 2 = one line per epoch
+    k = 3 # Number of times to repeat the data
 
     # Epoch loop
     for epoch in range(1, epochs+1):
-        k = 3
-        y_tmp = y_train
-        X_tmp = X_train
-        for _ in range(k-1):
-            y_tmp = np.concatenate((y_tmp, y_train))
-            X_tmp = np.concatenate((X_tmp, X_train))
+        # Repeat the data k times
+        y_tmp = np.tile(y_train, (k, 1))
+        X_tmp = np.tile(X_train, (k, 1, 1, 1))
         
         print(f"\nEpoch {epoch}/{epochs}", flush=True)
         model.fit(
@@ -92,6 +85,6 @@ if __name__ == '__main__':
         )
 
     # Evaluate model after training
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(X_test, verbose=0)
     accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
     print(f'Final accuracy: {accuracy:.4f}')
