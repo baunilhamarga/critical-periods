@@ -77,7 +77,7 @@ if __name__ == '__main__':
     for epoch in range(1, epochs+1):
         print(f"\nEpoch {epoch}/{epochs}", flush=True)
         model.fit(
-            datagen.flow(X_aug, y_aug, batch_size=batch_size),
+            datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True),
             epochs=epoch, initial_epoch=epoch - 1,
             verbose=verbose, callbacks=callbacks,
             validation_data = (X_test, y_test),
