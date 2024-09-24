@@ -47,7 +47,7 @@ if __name__ == '__main__':
     sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
-    # Configurr Data Augmentation
+    # Configure Data Augmentation
     datagen = func.generate_data_augmentation(X_train)
 
     # Set up learning rate scheduler
@@ -67,17 +67,17 @@ if __name__ == '__main__':
     epochs = 200
     batch_size = 16
     verbose = 2 # 0 = silent, 1 = progress bar, 2 = one line per epoch
-    k = 3 # Number of times to repeat the data
+
+    # Repeat the data k times, datagen will transform
+    k = 3
+    y_aug = np.tile(y_train, (k, 1))
+    X_aug = np.tile(X_train, (k, 1, 1, 1))
 
     # Epoch loop
     for epoch in range(1, epochs+1):
-        # Repeat the data k times
-        y_tmp = np.tile(y_train, (k, 1))
-        X_tmp = np.tile(X_train, (k, 1, 1, 1))
-        
         print(f"\nEpoch {epoch}/{epochs}", flush=True)
         model.fit(
-            datagen.flow(X_tmp, y_tmp, batch_size=batch_size),
+            datagen.flow(X_aug, y_aug, batch_size=batch_size),
             epochs=epoch, initial_epoch=epoch - 1,
             verbose=verbose, callbacks=callbacks,
             validation_data = (X_test, y_test),
