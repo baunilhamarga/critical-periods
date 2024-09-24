@@ -6,23 +6,13 @@ from tensorflow.keras.callbacks import Callback
 import tensorflow as tf
 from sklearn.model_selection import StratifiedShuffleSplit
 import keras
-from keras.utils.generic_utils import CustomObjectScope
-from keras import backend as K
+from tensorflow.keras.utils import CustomObjectScope
+from tensorflow.keras import backend as K
 from sklearn.model_selection import train_test_split
-from keras.applications.mobilenet import DepthwiseConv2D
-from keras.layers.pooling import GlobalMaxPooling2D, GlobalAveragePooling2D, MaxPooling2D, AveragePooling2D
-from keras.layers import Dense, Dropout, Conv2D, Flatten, Activation, BatchNormalization, Add
-from keras.layers import Input
+from tensorflow.keras.layers import *
 from keras.models import Model
-from keras.layers import Conv2D, MaxPooling2D, Dropout, Dense, Flatten
-from keras.layers import Input, BatchNormalization, Activation
 import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import LearningRateScheduler    
-
-
-
-
-
 
 def load_model(architecture_file='', weights_file=''):
     def _hard_swish(x):
