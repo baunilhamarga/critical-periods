@@ -7,7 +7,7 @@ import argparse
 from models import ResNetN
 import keras
 from utils import custom_functions as func
-from utils import custom_callbacks as callbacks
+from utils import custom_callbacks as cb
 
 if __name__ == '__main__':
     seed = 12227
@@ -69,17 +69,27 @@ if __name__ == '__main__':
 
     # Set manual epoch loop
     epochs = 200
-    batch_size = 128
+    batch_size = 16
     steps_per_epoch = len(X_train) // batch_size
-    verbose = 1 # 0 = silent, 1 = progress bar, 2 = one line per epoch
+    verbose = 2 # 0 = silent, 1 = progress bar, 2 = one line per epoch
 
     # Epoch loop
     for epoch in range(1, epochs+1):
-        print(f"Epoch {epoch}/{epochs}", flush=True)
-        model.fit(datagen.flow(X_train, y_train, batch_size=batch_size),
-                  steps_per_epoch=steps_per_epoch,
-                  epochs=epoch, initial_epoch=epoch - 1,
-                  verbose=verbose, callbacks=callbacks, validation_data = (X_test, y_test))
+        k = 3
+        y_tmp = y_train
+        X_tmp = X_train
+        for _ in range(k-1):
+            y_tmp = np.concatenate((y_tmp, y_train))
+            X_tmp = np.concatenate((X_tmp, X_train))
+        
+        print(f"\nEpoch {epoch}/{epochs}", flush=True)
+        model.fit(
+            datagen.flow(X_tmp, y_tmp, batch_size=batch_size),
+            epochs=epoch, initial_epoch=epoch - 1,
+            verbose=verbose, callbacks=callbacks,
+            validation_data = (X_test, y_test),
+            validation_freq=5
+        )
 
     # Evaluate model after training
     y_pred = model.predict(X_test)
