@@ -27,7 +27,7 @@ if __name__ == '__main__':
     verbose = args.verbose
 
     model_name = architecture.split('/')[-1] if model_name == '' else model_name
-    print(model_name, flush=True)
+    print(f"{model_name} {dataset_name}", flush=True)
 
     # Create directory for saving weights if it doesn't exist
     os.makedirs(weights_dir, exist_ok=True)
@@ -73,6 +73,8 @@ if __name__ == '__main__':
     k = 3
     y_aug = np.tile(y_train, (k, 1))
     X_aug = np.tile(X_train, (k, 1, 1, 1))
+    
+    print(f"{X_train.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
 
     # Epoch loop
     for epoch in range(1, epochs+1):
