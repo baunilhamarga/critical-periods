@@ -17,12 +17,14 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='CIFAR10')
     parser.add_argument('--weights', type=str, default='')
     parser.add_argument('--model_name', type=str, default='')
+    parser.add_argument('--verbose', type=int, default=2, help='Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch')
 
     args = parser.parse_args()
     architecture = args.architecture
     dataset_name = args.dataset
     weights_dir = args.weights if args.weights != '' else f'./weights/{dataset_name}/{architecture}'
     model_name = args.model_name
+    verbose = args.verbose
 
     model_name = architecture.split('/')[-1] if model_name == '' else model_name
     print(model_name, flush=True)
@@ -66,7 +68,6 @@ if __name__ == '__main__':
     # Set manual epoch loop configuration
     epochs = 200
     batch_size = 16
-    verbose = 2 # 0 = silent, 1 = progress bar, 2 = one line per epoch
 
     # Repeat the data k times, datagen will transform
     k = 3
