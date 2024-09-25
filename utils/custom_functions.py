@@ -248,7 +248,7 @@ def lr_scheduler(epoch, lr):
     else:
         return 1e-4
 
-def generate_data_augmentation(X_train):
+def generate_data_augmentation(X_train, seed=12227):
     print('Using real-time data augmentation.')
     datagen = tf.keras.preprocessing.image.ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
@@ -261,7 +261,7 @@ def generate_data_augmentation(X_train):
         height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
         horizontal_flip=True,  # randomly flip images
         vertical_flip=False)  # randomly flip images
-    datagen.fit(X_train)
+    datagen.fit(X_train, seed=seed)
     return datagen
 
 def save_data_augmentation(X_train, y_train, batch_size=256, file_name=''):
