@@ -70,9 +70,17 @@ if __name__ == '__main__':
     
     print(f"{X_aug.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
     
+    accuracies = []
+    starting_epoch = 1
+    
     # Train with no augmentation loop
-    for initial_epoch in range(1, epochs+1):
-        print(f"Training from epoch {initial_epoch} to {epochs} with k={k}.", flush=True)
+    for initial_epoch in range(starting_epoch, epochs+1):
+        # Load the epoch weights with augmentation
+        if initial_epoch != 1:
+            print(f"\nLoading weights already trained for {initial_epoch-1} epochs with data augmentation.", flush=True)
+            model.load_weights(os.path.join(weights_dir, f"{model_name}_{dataset_name}_epoch_{initial_epoch-1:02d}.weights.h5"))
+        
+        print(f"Training from the start of epoch {initial_epoch} to the end of epoch {epochs} with k={k}.", flush=True)
         
         model.fit(
             datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True),
@@ -85,12 +93,12 @@ if __name__ == '__main__':
         # Evaluate model after training
         y_pred = model.predict(X_test, verbose=0)
         accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
-        print(f'Final accuracy: {accuracy:.4f}')
+        print(f'Final accuracy trained from the start of epoch {starting_epoch}: {accuracy:.4f}')
+        
+        accuracies.append((initial_epoch - 1, accuracy))
+        
+        print(f"[(initial_epoch , accuracies)] = {accuracies}", flush=True)
         
         # Save the model weights at the end of training
         print(f"Saving weights trained with k={k} from epoch {initial_epoch} to {epochs}.", flush=True)
         model.save_weights(os.path.join(weights_dir, f"{model_name}_{dataset_name}_no_aug_from_epoch_{initial_epoch:02d}.weights.h5"), overwrite=True)
-        
-        # Load the next epoch weights with augmentation
-        print(f"\nLoading weights trained for {initial_epoch} epochs with data augmentation.", flush=True)
-        model.load_weights(os.path.join(weights_dir, f"{model_name}_{dataset_name}_epoch_{initial_epoch:02d}.weights.h5"))
