@@ -93,7 +93,7 @@ if __name__ == '__main__':
         # Evaluate model after training
         y_pred = model.predict(X_test, verbose=0)
         accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
-        print(f'Final accuracy trained from the start of epoch {starting_epoch}: {accuracy:.4f}')
+        print(f'Final accuracy trained from the start of epoch {initial_epoch}: {accuracy:.4f}')
         
         accuracies.append((initial_epoch - 1, accuracy))
         
