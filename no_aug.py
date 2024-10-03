@@ -7,6 +7,7 @@ from models import ResNetN
 import keras
 from utils import custom_functions as func
 from utils import custom_callbacks as cb
+import datetime
 
 if __name__ == '__main__':
     seed = 12227
@@ -19,6 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='')
     parser.add_argument('--output_path', type=str, default='', help='Path to save the output files')
     parser.add_argument('--verbose', type=int, default=2, help='Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch')
+    parser.add_argument('--starting_epoch', type=int, default=1, help='Starting epoch for training')
 
     args = parser.parse_args()
     architecture = args.architecture
@@ -27,6 +29,7 @@ if __name__ == '__main__':
     model_name = args.model_name
     verbose = args.verbose
     output_path = args.output_path if args.output_path != '' else weights_dir
+    starting_epoch = args.starting_epoch
 
     model_name = architecture.split('/')[-1] if model_name == '' else model_name
     print(f"{model_name} {dataset_name}", flush=True)
@@ -71,10 +74,11 @@ if __name__ == '__main__':
     print(f"{X_aug.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
     
     accuracies = []
-    starting_epoch = 1
+    starting_epoch = starting_epoch
     
     # Train with no augmentation loop
     for initial_epoch in range(starting_epoch, epochs+1):
+        print(f"Current time: {datetime.datetime.now()}", flush=True)
         # Load the epoch weights with augmentation
         if initial_epoch != 1:
             print(f"\nLoading weights already trained for {initial_epoch-1} epochs with data augmentation.", flush=True)
