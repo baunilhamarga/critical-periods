@@ -49,11 +49,6 @@ if __name__ == '__main__':
     # Load or create the random starting weights using the seed
     func.load_or_create_weights(model, random_weights_path)
     
-    # Configure the optimizer
-    lr = 0.01
-    sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
-    
     # Configure Data Augmentation
     datagen = func.generate_data_augmentation(X_train)
 
@@ -75,6 +70,11 @@ if __name__ == '__main__':
     
     accuracies = []
     starting_epoch = starting_epoch
+    
+    # Configure the optimizer
+    lr = 0.01 if starting_epoch < 100 else 0.001 if starting_epoch < 150 else 0.0001
+    sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     # Train with no augmentation loop
     for initial_epoch in range(starting_epoch, epochs+1):
@@ -106,3 +106,4 @@ if __name__ == '__main__':
         # Save the model weights at the end of training
         print(f"Saving weights trained with k={k} from epoch {initial_epoch} to {epochs}.", flush=True)
         model.save_weights(os.path.join(weights_dir, f"{model_name}_{dataset_name}_no_aug_from_epoch_{initial_epoch:02d}.weights.h5"), overwrite=True)
+        
