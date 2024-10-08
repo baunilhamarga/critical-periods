@@ -93,7 +93,6 @@ if __name__ == '__main__':
             for j in range(i + 1, len(grad_batch)):
                 cosine.append(distance.cosine(grad_batch[i], grad_batch[j]))
 
-        maximum = max(cosine)
         results = {
             'epoch': epoch,
             'min_cosine_distance': min(cosine),
@@ -107,6 +106,7 @@ if __name__ == '__main__':
         }
         print(results)
         all_results.append(results)
+
     # Convert the results to a DataFrame
     df = pd.DataFrame(all_results)
 
