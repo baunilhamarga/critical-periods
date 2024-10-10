@@ -40,7 +40,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     architecture = args.architecture
     dataset_name = args.dataset
-    weights_dir = args.weights_dir if args.weights_dir != '' else f'../weights/{dataset_name}/{architecture}_best_weights'
+    weights_dir = args.weights_dir if args.weights_dir != '' else f'../weightsHeitor/{dataset_name}/{architecture}_best_weights'
     model_name = args.model_name
     epochs = args.epochs
     starting_epoch = args.starting_epoch
@@ -62,9 +62,9 @@ if __name__ == '__main__':
     # Path to random starting weights
     random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
 
-    # Initialize the list to store all results
-    all_results = []
-    exit(1)
+    
+    grad_epoch = []
+    batch_size = 512
 
     # Loop through epochs and load weights to compute gradient of each layer in each epoch
     for epoch in range(starting_epoch, epochs+1):
@@ -78,48 +78,51 @@ if __name__ == '__main__':
             print(f"Weights for epoch {epoch} not found. Skipping...", flush=True)
             continue
 
-        # Compute gradients for the current epoch for each layer
-        # for the same batch
-        batch_size = 512
+        # Compute gradients for the current epoch for each batch
+        grad_batch = []
+        for batch in gen_batches(X_train.shape[0], batch_size):
+            grad = gradient(tf.convert_to_tensor(X_train[batch], tf.float32), tf.convert_to_tensor(y_train[batch]), model)
+            tmp = grad[0].numpy().reshape(-1)
+            for i in range(1, len(grad)):
+                tmp = np.hstack((tmp, grad[i].numpy().reshape(-1)))
+            grad_batch.append(tmp)
+        
+        grad_epoch.append(grad_batch)
 
-        grad_layers = []
-        grad = gradient(tf.convert_to_tensor(X_train[:batch_size], tf.float32), tf.convert_to_tensor(y_train[:batch_size]), model)
-        print("Grad shape :", grad.shape)
-        exit(1)
 
-        # for batch in gen_batches(X_train.shape[0], 512):
-        #     grad = gradient(tf.convert_to_tensor(X_train[batch], tf.float32), tf.convert_to_tensor(y_train[batch]), model)
-        #     tmp = grad[0].numpy().reshape(-1)
-        #     for i in range(1, len(grad)):
-        #         tmp = np.hstack((tmp, grad[i].numpy().reshape(-1)))
-        #     grad_batch.append(tmp)
+    # Compute cosine similarity between epoch t and t-1
+    cossine_similarity = []
+    for i in range(2, epochs+1):
+        cosine_similarity_epoch = []
+        # Iterate through each batch
+        for j in range(0, len(grad_epoch[i-1])):
+            cosine_similarity_epoch.append(1 - distance.cosine(grad_epoch[i][j], grad_epoch[i-1][j]))
+        cosine_similarity.append(cosine_similarity_epoch)
 
-        # Compute cosine distance between gradient batches
-        cosine = []
-        for i in range(0, len(grad_batch)):
-            for j in range(i + 1, len(grad_batch)):
-                cosine.append(distance.cosine(grad_batch[i], grad_batch[j]))
+    # Get mean of each element of cossine_similarity
+    cossine_similarity = cossine_similarity.mean(axis=0)
 
-        maximum = max(cosine)
-        results = {
-            'epoch': epoch,
-            'min_cosine_distance': min(cosine),
-            'avg_cosine_distance': np.mean(cosine),
-            'max_cosine_distance': max(cosine),
-            'median_cosine_distance': np.median(cosine),
-            'min_cosine_similarity': 1 - max(cosine),
-            'avg_cosine_similarity': 1 - np.mean(cosine),
-            'max_cosine_similarity': 1 - min(cosine),
-            'median_cosine_similarity': 1 - np.median(cosine)
-        }
-        print(results)
-        all_results.append(results)
+    maximum = max(cosine_similarity)
+    results = {
+        'min_cosine_similarity': min(cosine_similarity),
+        'avg_cosine_similarity': np.mean(cosine_similarity),
+        'max_cosine_similarity': max(cosine_similarity),
+        'median_cosine_similarity': np.median(cosine_similarity)
+    }
+    print(results)
+
     # Convert the results to a DataFrame
-    exit(1)
-    df = pd.DataFrame(all_results)
+    epochs = list(range(1, len(cosine_similarity) + 1))
+
+    # Create a DataFrame with the cosine similarity values and the corresponding epochs
+    df = pd.DataFrame({
+        'epoch': epochs,
+        'gradient_predictiveness': cosine_similarity
+    })
+
 
     # Define the path to save the CSV file
-    csv_path = f'../plots/gradient_predictiviness_results_{model_name}_{dataset_name}_batch_size_{batch_size}.csv'
+    csv_path = f'../plots/{model_name}_{dataset_name}_{batch_size}_gradient_predictiveness_results.csv'
 
     # Save the DataFrame to a CSV file
     df.to_csv(csv_path, index=False)
