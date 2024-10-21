@@ -97,13 +97,20 @@ def ResNet(input_shape, depth_block, iter=0, num_classes=10):
 
 # Define a function to dynamically select and create models
 def build_model(model_type, input_shape=(32, 32, 3), num_classes=10, compile=False, N_layers=44):
-    if (N_layers - 2) % 6 != 0:
-        raise ValueError(f"Invalid number of layers {N_layers} for ResNet. (N_layers - 2) must be divisible by 6.")
-    
-    n = (N_layers - 2) / 6
+    # Determine if the model has 3 or 4 stages based on N_layers
+    if (N_layers - 2) % 6 == 0:
+        # For 3 stages: N_layers like 44, 56
+        n = (N_layers - 2) // 6
+        depth_block = [int(n)] * 3  # 3 stages, with n blocks per stage
+    elif (N_layers - 2) % 8 == 0:
+        # For 4 stages: N_layers like 18, 34, 50
+        n = (N_layers - 2) // 8
+        depth_block = [int(n)] * 4  # 4 stages, with n blocks per stage
+    else:
+        raise ValueError(f"Invalid number of layers {N_layers} for ResNet. Must be divisible by 6 (for 3 stages) or 8 (for 4 stages).")
     
     if model_type.startswith('ResNet'):
-        model = ResNet(input_shape=input_shape, depth_block = 3 * [int(n)], num_classes=num_classes)
+        model = ResNet(input_shape=input_shape, depth_block = depth_block, num_classes=num_classes)
     else:
         raise ValueError(f"Unknown model_type {model_type}")
     
