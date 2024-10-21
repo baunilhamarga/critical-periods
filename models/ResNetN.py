@@ -97,10 +97,10 @@ def ResNet(input_shape, depth_block, iter=0, num_classes=10):
 
 # Define a function to dynamically select and create models
 def build_model(model_type, input_shape=(32, 32, 3), num_classes=10, compile=False, N_layers=44):
-    if (N_layers - 2) % 3 != 0:
-        raise ValueError(f"Invalid number of layers {N_layers} for ResNet. (N_layers - 2) must be divisible by 3.")
+    if (N_layers - 2) % 6 != 0:
+        raise ValueError(f"Invalid number of layers {N_layers} for ResNet. (N_layers - 2) must be divisible by 6.")
     
-    n = (N_layers - 2) / 3
+    n = (N_layers - 2) / 6
     
     if model_type.startswith('ResNet'):
         model = ResNet(input_shape=input_shape, depth_block = 3 * [int(n)], num_classes=num_classes)
