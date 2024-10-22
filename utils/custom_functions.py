@@ -852,9 +852,9 @@ def load_or_create_weights(model, weights_path):
         print(f"Creating random starting weights at {weights_path}.")
         model.save_weights(weights_path)
             
-def subsampling(X_train, y_train, p=0.1):
+def subsampling(X_train, y_train, p=0.1, random_state=0):
     # Subsample 10% of the training data to avoid memory constraints
-    sss = StratifiedShuffleSplit(n_splits=1, train_size=0.1, random_state=0)
+    sss = StratifiedShuffleSplit(n_splits=1, train_size=p, random_state=random_state)
     placeholder = np.zeros(X_train.shape[0])
     for train_index, _ in sss.split(placeholder, y_train):
 
