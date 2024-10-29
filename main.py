@@ -46,7 +46,7 @@ if __name__ == '__main__':
     
     # Configure the optimizer
     lr = 0.01
-    sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     # Configure Data Augmentation

@@ -73,7 +73,7 @@ if __name__ == '__main__':
     
     # Configure the optimizer
     lr = 0.01 if starting_epoch < 100 else 0.001 if starting_epoch < 150 else 0.0001
-    sgd = keras.optimizers.SGD(learning_rate=lr, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     # Train with no augmentation loop
