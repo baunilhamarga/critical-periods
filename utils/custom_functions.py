@@ -12,7 +12,12 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import *
 from keras.models import Model
 import matplotlib.pyplot as plt
-from tensorflow.keras.callbacks import LearningRateScheduler    
+from tensorflow.keras.callbacks import LearningRateScheduler
+import pandas as pd
+from scipy.spatial import distance
+from sklearn.utils import gen_batches
+import argparse
+import datetime
 
 def load_model(architecture_file='', weights_file=''):
     def _hard_swish(x):
@@ -919,3 +924,68 @@ def finetuning(model, X_train, y_train, X_test, y_test):
 
 def data_augmentation(X):
     return np.array(X)
+
+def is_outlier(past_values, new_value, threshold=1.5, mode='both'):
+    """
+    Determine if the new_value is an outlier based on past_values using IQR method.
+    
+    Args:
+        past_values (list or array): List of past max cosine similarity values.
+        new_value (float): The new max cosine similarity value to be checked.
+        threshold (float): Multiplier for IQR to define outlier bounds. Default is 1.5.
+        mode (str): Mode for detecting outliers. Options are 'low', 'high', or 'both'. Default is 'both'.
+    
+    Returns:
+        bool: True if new_value is an outlier in the specified mode, False otherwise.
+    """
+    # Convert past_values to a pandas Series for easy quantile computation
+    past_series = pd.Series(past_values)
+    
+    # Compute Q1, Q3, and IQR for max_cosine_similarity in the current segment
+    Q1 = past_series.quantile(0.25)
+    Q3 = past_series.quantile(0.75)
+    IQR = Q3 - Q1
+
+    # Calculate the lower and upper bounds for outliers
+    lower_bound = Q1 - threshold * IQR
+    upper_bound = Q3 + threshold * IQR
+
+    # Determine outliers based on the specified mode
+    if mode == 'low':
+        return new_value < lower_bound
+    elif mode == 'high':
+        return new_value > upper_bound
+    elif mode == 'both':
+        return new_value < lower_bound or new_value > upper_bound
+    else:
+        raise ValueError("Invalid mode. Choose from 'low', 'high', or 'both'.")
+
+def gradient(x, y, model):
+    loss_object = tf.keras.losses.CategoricalCrossentropy()
+    with tf.GradientTape() as tape:
+        tape.watch(x)
+        y_hat = model(x)
+        loss = loss_object(y, y_hat)
+
+    return tape.gradient(loss, model.trainable_weights)
+
+def calculate_max_cosine_similarity(X_train, y_train, model, batch_size=512):
+    # Compute gradients for each batch
+    grad_batches = []
+
+    for batch in gen_batches(X_train.shape[0], batch_size=batch_size):
+        grad = gradient(tf.convert_to_tensor(X_train[batch], tf.float32), tf.convert_to_tensor(y_train[batch]), model)
+        tmp = grad[0].numpy().reshape(-1)
+        for i in range(1, len(grad)):
+            tmp = np.hstack((tmp, grad[i].numpy().reshape(-1)))
+        grad_batches.append(tmp)
+
+    # Compute max cosine similarity between pairs of gradient vectors
+    max_cosine_similarity = -1
+    for i in range(len(grad_batches)):
+        for j in range(i + 1, len(grad_batches)):
+            cosine_similarity = 1 - distance.cosine(grad_batches[i], grad_batches[j])
+            if cosine_similarity > max_cosine_similarity:
+                max_cosine_similarity = cosine_similarity
+
+    return max_cosine_similarity
