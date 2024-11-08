@@ -2,7 +2,10 @@ import numpy as np
 import keras
 from keras.callbacks import Callback
 import pandas as pd
-import custom_functions as func
+try:
+    import custom_functions as func
+except:
+    from utils import custom_functions as func
 
 class LearningRateScheduler(Callback):
 
@@ -61,7 +64,7 @@ class EarlyStoppingByLossVal(keras.callbacks.Callback):
             self.model.stop_training = True
 
 class GradientConfusion(Callback):
-    def __init__(self, X_train, y_train, metric_frequency=1, initial_distribution_size=10, threshold=1.5):
+    def __init__(self, X_train, y_train, metric_frequency=1, initial_distribution_size=10, threshold=1.5, batch_size=512):
         """
         Gradient Confusion Critical Period Identification.
 
@@ -76,21 +79,22 @@ class GradientConfusion(Callback):
         self.frequency = metric_frequency
         self.check_interval = initial_distribution_size
         self.threshold = threshold
+        self.batch_size=batch_size
         self.max_cosine_similarity_values = []
 
     def on_epoch_end(self, epoch, logs=None):
         # Get the new max cosine similarity value for the current epoch
         if (epoch + 1) % self.frequency == 0:
-            new_max_similarity = func.calculate_max_cosine_similarity(self.X_train, self.y_train, self.model)
+            new_max_similarity = func.calculate_pairwise_cosine_similarity(X_train=self.X_train, y_train=self.y_train, model=self.model, mode='max', batch_size=self.batch_size)
         
             # Log metric to logs dictionary
-            logs['max_cosine_similarity'] = new_max_similarity
+            logs['max_cos_similarity'] = new_max_similarity
 
             # Check for outlier condition based on check interval
             if (epoch + 1) % self.check_interval == 0 and len(self.max_cosine_similarity_values) > 1:
                 # Call the outlier detection function
                 if func.is_outlier(self.max_cosine_similarity_values[:-1], new_max_similarity, threshold=self.threshold, mode='low'):
-                    print(f"Stopping training at epoch {epoch + 1} due to detected low outlier in max cosine similarity.")
+                    print(f"\nStopping training at epoch {epoch + 1} due to detected low outlier in max cosine similarity.")
                     self.model.stop_training = True
                     
             # Append point to the history
