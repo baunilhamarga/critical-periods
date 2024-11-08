@@ -72,7 +72,7 @@ if __name__ == '__main__':
     starting_epoch = starting_epoch
     
     # Configure the optimizer
-    lr = 0.01 if starting_epoch < 100 else 0.001 if starting_epoch < 150 else 0.0001
+    lr = 0.01
     sgd = keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
