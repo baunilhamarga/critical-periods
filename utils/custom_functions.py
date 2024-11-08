@@ -974,7 +974,7 @@ def gradient(x, y, model):
 
     return tape.gradient(loss, model.trainable_weights)
 
-def calculate_max_cosine_similarity(X_train, y_train, model, batch_size=512):
+def calculate_pairwise_cosine_similarity(X_train, y_train, model, mode='avg', batch_size=512):
     # Compute gradients for each batch
     grad_batches = []
 
@@ -986,11 +986,19 @@ def calculate_max_cosine_similarity(X_train, y_train, model, batch_size=512):
         grad_batches.append(tmp)
 
     # Compute max cosine similarity between pairs of gradient vectors
-    max_cosine_similarity = -1
+    similarity_metric = -1 if mode == 'max' else 1 if mode == 'min' else 0
     for i in range(len(grad_batches)):
         for j in range(i + 1, len(grad_batches)):
             cosine_similarity = 1 - distance.cosine(grad_batches[i], grad_batches[j])
-            if cosine_similarity > max_cosine_similarity:
-                max_cosine_similarity = cosine_similarity
+            if mode == 'max' and cosine_similarity > similarity_metric:
+                similarity_metric = cosine_similarity
+            elif mode == 'min' and cosine_similarity < similarity_metric:
+                similarity_metric = cosine_similarity
+            elif mode == 'avg':
+                similarity_metric += cosine_similarity
+    
+    if mode == 'avg':
+        similarity_metric /= (len(grad_batches) * (len(grad_batches) - 1) / 2)
 
-    return max_cosine_similarity
+    return similarity_metric
+
