@@ -13,10 +13,13 @@ if __name__ == '__main__':
     func.set_seeds(seed)  # Set seeds for repeatability
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--architecture', type=str, default='ResNet44')
-    parser.add_argument('--dataset', type=str, default='CIFAR10')
-    parser.add_argument('--weights', type=str, default='')
-    parser.add_argument('--model_name', type=str, default='')
+    parser.add_argument('--architecture', type=str, default='ResNet44', help='Model architecture to use')
+    parser.add_argument('--dataset', type=str, default='CIFAR10', help='Dataset to use for training and evaluation')
+    parser.add_argument('--weights', type=str, default='', help='Directory to save or load model weights')
+    parser.add_argument('--model_name', type=str, default='', help='Name of the model')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
+    parser.add_argument('--n_epochs', type=int, default=200, help='Number of epochs for training')
+    parser.add_argument('--k', type=int, default=3, help='Number of times to repeat the data')
     parser.add_argument('--verbose', type=int, default=2, help='Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch')
 
     args = parser.parse_args()
@@ -25,6 +28,9 @@ if __name__ == '__main__':
     weights_dir = args.weights if args.weights != '' else f'./weights/{dataset_name}/{architecture}'
     model_name = args.model_name
     verbose = args.verbose
+    batch_size = args.batch_size
+    n_epochs = args.n_epochs
+    k = args.k
 
     model_name = architecture.split('/')[-1] if model_name == '' else model_name
     print(f"{model_name} {dataset_name}", flush=True)
@@ -33,13 +39,16 @@ if __name__ == '__main__':
     os.makedirs(weights_dir, exist_ok=True)
 
     # Load the CIFAR-10 dataset
-    X_train, y_train, X_test, y_test = func.cifar_resnet_data()
+    cifar_type = int(dataset_name.lower().split('cifar')[-1])
+    X_train, y_train, X_test, y_test = func.cifar_resnet_data(cifar_type=cifar_type)
 
     # Load a model
-    model = ResNetN.build_model(model_name, input_shape=(32, 32, 3), num_classes=10, N_layers=44)
+    N_layers = int(architecture.lower().split('resnet')[-1])
+    num_classes = y_train.shape[1]
+    model = ResNetN.build_model(model_name, input_shape=(32, 32, 3), num_classes=num_classes, N_layers=N_layers)
 
     # Path to random starting weights
-    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
+    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}.weights.h5')
     
     # Load or create the random starting weights using the seed
     func.load_or_create_weights(model, random_weights_path)
@@ -65,27 +74,19 @@ if __name__ == '__main__':
     
     callbacks = [lr_scheduler_callback, checkpoint_callback]
 
-    # Set manual epoch loop configuration
-    epochs = 200
-    batch_size = 16
-
     # Repeat the data k times, datagen will transform
-    k = 3
     y_aug = np.tile(y_train, (k, 1))
     X_aug = np.tile(X_train, (k, 1, 1, 1))
     
-    print(f"{X_train.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
+    print(f"{X_aug.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
 
-    # Epoch loop
-    for epoch in range(1, epochs+1):
-        print(f"\nEpoch {epoch}/{epochs}", flush=True)
-        model.fit(
-            datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True),
-            epochs=epoch, initial_epoch=epoch - 1,
-            verbose=verbose, callbacks=callbacks,
-            validation_data = (X_test, y_test),
-            validation_freq=5
-        )
+    model.fit(
+        datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True),
+        epochs=n_epochs,
+        verbose=verbose, callbacks=callbacks,
+        validation_data = (X_test, y_test),
+        validation_freq=5
+    )
 
     # Evaluate model after training
     y_pred = model.predict(X_test, verbose=0)
