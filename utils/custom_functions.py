@@ -93,40 +93,44 @@ def cifar_vgg_data(debug=False, validation_set=False, cifar_type=10, train_size=
             break
         return X_train, y_train, X_test, y_test, X_val, y_val
 
-def cifar_resnet_data(debug=False, validation_set=False):
+def cifar_resnet_data(debug=False, validation_set=False, cifar_type = 10):
     print('Debuging Mode') if debug is True else print('Real Mode')
 
-    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+    if cifar_type == 10:
+        (X_train, y_train), (X_test, y_test) = keras.datasets.cifar10.load_data()
+    elif cifar_type == 100:
+        (X_train, y_train), (X_test, y_test) = keras.datasets.cifar100.load_data()
+    else:
+        raise ValueError('Cifar type not supported')
 
-    x_train = x_train.astype('float32') / 255
-    x_test = x_test.astype('float32') / 255
+    X_train = X_train.astype('float32') / 255
+    X_test = X_test.astype('float32') / 255
 
-    x_train_mean = np.mean(x_train, axis=0)
-    x_train -= x_train_mean
-    x_test -= x_train_mean
+    X_train_mean = np.mean(X_train, axis=0)
+    X_train -= X_train_mean
+    X_test -= X_train_mean
 
     if debug:
         idx_train = [4, 5, 32, 6, 24, 41, 38, 39, 59, 58, 28, 20, 27, 40, 51, 95, 103, 104, 84, 85, 87, 62, 8, 92, 67,
                      71, 76, 93, 129, 76]
         idx_test = [9, 25, 0, 22, 24, 4, 20, 1, 11, 3]
 
-        x_train = x_train[idx_train]
+        X_train = X_train[idx_train]
         y_train = y_train[idx_train]
 
-        x_test = x_test[idx_test]
+        X_test = X_test[idx_test]
         y_test = y_test[idx_test]
 
-    y_train = keras.utils.to_categorical(y_train, 10)
-    y_test = keras.utils.to_categorical(y_test, 10)
-    #y_test = np.argmax(y_test, axis=1)
+    y_train = keras.utils.to_categorical(y_train, cifar_type)
+    y_test = keras.utils.to_categorical(y_test, cifar_type)
 
     if validation_set is False:
-        return x_train, y_train, x_test, y_test
+        return X_train, y_train, X_test, y_test
     else:
-        datagen = generate_data_augmentation(x_train)
-        for x_val, y_val in datagen.flow(x_train, y_train, batch_size=5000):
+        datagen = generate_data_augmentation(X_train)
+        for X_val, y_val in datagen.flow(X_train, y_train, batch_size=5000):
             break
-        return x_train, y_train, x_test, y_test, x_val, y_val
+        return X_train, y_train, X_test, y_test, X_val, y_val
 
 def food_data(subtract_pixel_mean=False,
                    path='../Food-101/food-101_128x128.npz', train_size=1.0, test_size=1.0):
