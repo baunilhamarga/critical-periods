@@ -1002,3 +1002,37 @@ def calculate_pairwise_cosine_similarity(X_train, y_train, model, mode='avg', ba
 
     return similarity_metric
 
+def save_history_to_csv(history_dict, csv_path='training_history.csv', starting_epoch=1):
+    """
+    Saves the training history to a CSV file.
+
+    Parameters:
+    history_dict (dict): A dictionary containing the training history. 
+                         Keys are metric names (e.g., 'loss', 'accuracy') and values are lists of metric values.
+    csv_path (str): The path where the CSV file will be saved. Default is 'training_history.csv'.
+    starting_epoch (int): The starting epoch number for the CSV index. Default is 1.
+
+    Returns:
+    None
+
+    The function processes the history dictionary to align the metric values with their corresponding epochs,
+    handling cases where metrics are logged at different frequencies. It then saves the processed data to a CSV file.
+    """
+    n_epochs = len(history_dict['loss'])
+    df = pd.DataFrame()
+    for key, values in history_dict.items():
+        # Calculate the frequency of logging for this metric
+        frequency = -(-n_epochs // len(values))  # Upper rounding using ceiling division
+        if frequency == 1:
+            adjusted_values = values
+        else:
+            # Create a full-length list with NaN placeholders
+            adjusted_values = [None] * n_epochs
+            # Fill the adjusted values with actual data at the correct positions
+            for i, val in enumerate(values):
+                adjusted_values[(i+1)*frequency-1 - ((starting_epoch-1)%frequency)] = val
+        df[key] = adjusted_values
+    # Save the dataframe to CSV
+    df.index = df.index + starting_epoch
+    df.to_csv(csv_path, index_label='epoch')
+    print(f"Training history saved to {csv_path}")
