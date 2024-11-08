@@ -878,10 +878,11 @@ def subsampling(X_train, y_train, p=0.1, random_state=0):
     return X_train_10p, y_train_10p
 
 def scheduler(epoch, lr):
-    if epoch == 100 or epoch == 150:
-        return lr/10
-
-    return lr
+    if epoch < 100:
+        return 1e-2
+    if epoch < 150:
+        return 1e-3
+    return 1e-4
 
 class LRLogger(Callback):
     def on_epoch_end(self, epoch, logs=None):
