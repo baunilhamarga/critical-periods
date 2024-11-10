@@ -4,6 +4,7 @@
 # Local files
 weights/
 temp/
+logs/
 
 # Temporaty files
 tmp*
