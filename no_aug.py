@@ -8,10 +8,15 @@ import keras
 from utils import custom_functions as func
 from utils import custom_callbacks as cb
 import datetime
+import tensorflow as tf
+import pandas as pd
 
 if __name__ == '__main__':
     seed = 12227
     func.set_seeds(seed)  # Set seeds for repeatability
+    
+    physical_devices = tf.config.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--architecture', type=str, default='ResNet44')
@@ -83,6 +88,26 @@ if __name__ == '__main__':
     # Train with no augmentation loop
     for initial_epoch in range(starting_epoch, n_epochs+1):
         print(f"Current time: {datetime.datetime.now()}", flush=True)
+        
+        log = pd.read_csv('./logs/no_aug_log.csv')
+        
+        while (initial_epoch - 1, model_name, dataset_name, k) in zip(log['initial_epoch'], log['model'], log['dataset'], log['k']):
+            initial_epoch += 1
+        
+        if initial_epoch > n_epochs:
+            print(f"no_aug job complete for {model_name} on {dataset_name}.", flush=True)
+            break
+            
+        log_entry = {
+            'model': model_name,
+            'dataset': dataset_name,
+            'k': k,
+            'initial_epoch': initial_epoch - 1,
+            'accuracy': None
+        }
+        
+        func.log_to_csv(log_entry, log_file_name='no_aug_log.csv')
+        
         # Load the epoch weights with augmentation
         if initial_epoch != 1:
             print(f"\nLoading weights already trained for {initial_epoch-1} epochs with data augmentation.", flush=True)
@@ -105,7 +130,15 @@ if __name__ == '__main__':
         
         accuracies.append((initial_epoch - 1, accuracy))
         
-        print(f"[(initial_epoch , accuracies)] = {accuracies}", flush=True)
+        log_entry = {
+            'model': model_name,
+            'dataset': dataset_name,
+            'k': k,
+            'initial_epoch': initial_epoch - 1,
+            'accuracy': accuracy
+        }
+        
+        func.log_to_csv(log_entry, log_file_name='no_aug_log.csv', delete_duplicate=True)
         
         # Save the model weights at the end of training
         print(f"Saving weights trained with k={k} from epoch {initial_epoch} to {n_epochs}.", flush=True)

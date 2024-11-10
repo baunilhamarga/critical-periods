@@ -18,6 +18,7 @@ from scipy.spatial import distance
 from sklearn.utils import gen_batches
 import argparse
 import datetime
+import csv
 
 def load_model(architecture_file='', weights_file=''):
     def _hard_swish(x):
@@ -1036,3 +1037,65 @@ def save_history_to_csv(history_dict, csv_path='training_history.csv', starting_
     df.index = df.index + starting_epoch
     df.to_csv(csv_path, index_label='epoch')
     print(f"Training history saved to {csv_path}")
+
+def log_to_csv(log_entry, log_file_name='main.csv', log_dir='./logs', delete_duplicate=False):
+    """
+    Logs information to a CSV file with a flexible header in the specified directory.
+    If the new entry has extra or fewer columns than the existing ones, the function will update the header.
+    
+    Parameters:
+    - log_entry (dict): Dictionary containing the values to log, where keys are the header names.
+    - log_dir (str): Directory where the log file is saved. Default is './logs'.
+    - log_file_name (str): Name of the CSV log file. Default is 'main.csv'.
+    """
+    # Ensure the logs directory exists
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Set full path for the log file
+    log_file_path = os.path.join(log_dir, log_file_name)
+    
+    # Check if the file exists and read existing header if it does
+    if os.path.exists(log_file_path):
+        with open(log_file_path, 'r') as f:
+            reader = csv.reader(f)
+            existing_header = next(reader)
+    else:
+        existing_header = []
+
+    # Define the new header based on the log entry
+    new_header = list(log_entry.keys())
+    
+    # Update header if new entry has different columns
+    if set(new_header) != set(existing_header):
+        updated_header = list(set(existing_header) | set(new_header))
+        
+        # Read existing data
+        data = []
+        if os.path.exists(log_file_path):
+            with open(log_file_path, 'r') as f:
+                reader = csv.DictReader(f)
+                data = list(reader)
+        
+        # Write updated header and existing data
+        with open(log_file_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=updated_header)
+            writer.writeheader()
+            for row in data:
+                writer.writerow(row)
+                
+    else:
+        updated_header = existing_header
+    
+    # Append the current log entry with updated columns
+    with open(log_file_path, 'a', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=updated_header)
+        writer.writerow(log_entry)
+    
+    # If delete_duplicate is True, remove rows with duplicate values in the first three columns
+    if delete_duplicate:
+        df = pd.read_csv(log_file_path)
+        df.drop_duplicates(subset=df.columns[:3], keep='last', inplace=True)
+
+    # Sort the dataframe by the initial keys
+    df.sort_values(by=updated_header[:3], inplace=True, ascending=True)
+    df.to_csv(log_file_path, index=False)
