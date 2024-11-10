@@ -33,7 +33,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     architecture = args.architecture
     dataset_name = args.dataset
-    weights_dir = args.weights if args.weights != '' else f'./weights/{dataset_name}/{architecture}_best_weights'
+    weights_dir = args.weights if args.weights != '' else f'./weights/{dataset_name}/{architecture}'
     model_name = args.model_name
     batch_size = args.batch_size
     n_epochs = args.n_epochs
