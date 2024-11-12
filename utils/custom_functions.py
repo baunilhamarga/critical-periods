@@ -1091,9 +1091,10 @@ def log_to_csv(log_entry, log_file_name='main.csv', log_dir='./logs', delete_dup
         writer = csv.DictWriter(f, fieldnames=updated_header)
         writer.writerow(log_entry)
     
+    df = pd.read_csv(log_file_path)
+    
     # If delete_duplicate is True, remove rows with duplicate values in the first three columns
     if delete_duplicate:
-        df = pd.read_csv(log_file_path)
         df.drop_duplicates(subset=df.columns[:3], keep='last', inplace=True)
 
     # Sort the dataframe by the initial keys
