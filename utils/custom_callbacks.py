@@ -79,7 +79,7 @@ class GradientConfusion(Callback):
         self.frequency = metric_frequency
         self.check_interval = initial_distribution_size
         self.threshold = threshold
-        self.batch_size=batch_size
+        self.batch_size = batch_size
         self.max_cosine_similarity_values = []
 
     def on_epoch_end(self, epoch, logs=None):
