@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--architecture', type=str, default='ResNet56')
-    parser.add_argument('--dataset', type=str, default='CIFAR10')
+    parser.add_argument('--dataset', type=str, default='imagenet5')
     parser.add_argument('--weights', type=str, default='')
     parser.add_argument('--model_name', type=str, default='')
     parser.add_argument('--verbose', type=int, default=2, help='Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch')
@@ -236,6 +236,15 @@ if __name__ == '__main__':
                     annealing_epoch = epoch + math.ceil(epochs_diff * ratio)
                     epochs_annealing.append(annealing_epoch) 
                     print(f"\nAnnealing ratio: {ratio}. Annealing epoch: {annealing_epoch} ")
+        else:
+            # Get dinamic coreset (10%)
+            X_coreset, y_coreset = func.subsampling(X_train, y_train, p=0.1, random_state=None)
+            datagen = func.generate_data_augmentation(X_coreset)
+
+            # Data augmentation with k=1
+            k = 1
+            y_aug = np.tile(y_coreset, (k, 1))
+            X_aug = np.tile(X_coreset, (k, 1, 1, 1))
 
     # Evaluate model after training
     y_pred = model.predict(X_test, verbose=0)
