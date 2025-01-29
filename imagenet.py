@@ -192,7 +192,7 @@ if __name__ == '__main__':
     y_aug = np.tile(y_train, (k, 1))
     X_aug = np.tile(X_train, (k, 1, 1, 1))
     
-    print(f"{X_train.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
+    print(f"{X_aug.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
 
     # Get kernel layer names
     layer_names = get_kernel_layer_names(model)
@@ -228,6 +228,8 @@ if __name__ == '__main__':
                 # Recalcula os dados aumentados com base no novo valor de k
                 y_aug = np.tile(y_train, (k, 1))
                 X_aug = np.tile(X_train, (k, 1, 1, 1))
+                dataflow = datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True)
+
                 # Limpa as distâncias cosseno para a próxima janela
                 cosine_distances_mean = []
                 # cosine_distances_concat = []
@@ -247,15 +249,6 @@ if __name__ == '__main__':
                     annealing_epoch = epoch + math.ceil(epochs_diff * ratio)
                     epochs_annealing.append(annealing_epoch) 
                     print(f"\nAnnealing ratio: {ratio}. Annealing epoch: {annealing_epoch} ")
-        else:
-            # Get dinamic coreset (10%)
-            X_coreset, y_coreset = func.subsampling(X_train, y_train, p=0.1, random_state=None)
-            datagen = func.generate_data_augmentation(X_coreset)
-
-            # Data augmentation with k=1
-            k = 1
-            y_aug = np.tile(y_coreset, (k, 1))
-            X_aug = np.tile(X_coreset, (k, 1, 1, 1))
 
     # Evaluate model after training
     y_pred = model.predict(X_test, verbose=0)
