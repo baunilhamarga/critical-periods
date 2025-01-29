@@ -3,6 +3,7 @@ import re
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
+
 from scipy.spatial.distance import cosine
 import os
 import argparse
@@ -12,6 +13,7 @@ from utils import custom_functions as func
 from utils import custom_callbacks as cb
 import math
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.applications import ResNet50
 
 # Variáveis globais para armazenar pesos iniciais e distâncias cosseno
 initial_weights = None
@@ -165,7 +167,18 @@ if __name__ == '__main__':
             "Arquitetura não suportada. Suporta apenas formatos como ResNetXX, onde XX é o número de camadas.")
 
     # Load a model
-    model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
+    if model_name.lower() == 'resnet50':
+        model = ResNet50(
+            include_top=True,        # Keep the classification head
+            weights=None,            # Train from scratch (no pre-trained weights)
+            input_tensor=None,
+            input_shape=X_train[0].shape,
+            pooling=None,
+            classes=num_classes,
+            classifier_activation="softmax"
+        )
+    else:
+        model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
 
     # Path to random starting weights
     random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
