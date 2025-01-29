@@ -5,7 +5,7 @@
   
 # Execute the Python script with different arguments  
 # ./shell_scripts.sh -m main
-./shell_scripts.sh -m imagenet
+./utils/shell_scripts.sh imagenet50.py --dataset tiny_imagenet --architecture ResNet50
 # ./shell_scripts.sh -m subsampling.annealing --architecture ResNet18 --dataset CIFAR100 --epoch 199
 # ./shell_scripts.sh -m subsampling.annealing --architecture ResNet18 --dataset CIFAR100 --epoch 192
 # ./shell_scripts.sh -m subsampling.annealing --architecture ResNet18 --dataset CIFAR100 --epoch 183
