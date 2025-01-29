@@ -190,13 +190,14 @@ if __name__ == '__main__':
     # Salva os pesos da inicialização se ainda não foram salvos
     if initial_weights is None:
         save_initial_weights(model, layer_names)
-
+        
+    dataflow = datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True)
     epochs_annealing = []
     # Epoch loop
     for epoch in range(1, epochs+1):
         print(f"\nEpoch {epoch}/{epochs}", flush=True)
         model.fit(
-            datagen.flow(X_aug, y_aug, batch_size=batch_size, seed=seed, shuffle=True),
+            dataflow,
             epochs=epoch, initial_epoch=epoch - 1,
             verbose=verbose, callbacks=callbacks,
             validation_data = (X_test, y_test),
