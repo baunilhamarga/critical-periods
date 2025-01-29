@@ -128,13 +128,16 @@ if __name__ == '__main__':
     if 'tiny' in dataset_name:
         num_classes = 200
         data_path = f'/home/vm03/Datasets/tiny_imagenet_train.npz'
-    else:
+    elif 'imagenet' in dataset_name:
         match = re.search(r'(\d+)', dataset_name)
         if match:
             num_classes = int(match.group(1))
             data_path = f'/home/vm03/Datasets/imagenet{num_classes}_cls.npz'
         else:
             raise ValueError("Unsupported dataset. Dataset name should contain the number of classes, e.g., CIFAR10 or ImageNet30.")
+    elif 'eurosat' in dataset_name:
+        num_classes = 10
+        data_path = f'/home/vm03/Datasets/eurosat.npz'
 
     # Load the dataset
     data = np.load(data_path)
