@@ -127,17 +127,17 @@ if __name__ == '__main__':
     # Create directory for saving weights if it doesn't exist
     os.makedirs(weights_dir, exist_ok=True)
 
-    if 'tiny' in dataset_name:
+    if 'tiny' in dataset_name.lower():
         num_classes = 200
         data_path = f'/home/vm03/Datasets/tiny_imagenet_train.npz'
-    elif 'imagenet' in dataset_name:
+    elif 'imagenet' in dataset_name.lower():
         match = re.search(r'(\d+)', dataset_name)
         if match:
             num_classes = int(match.group(1))
             data_path = f'/home/vm03/Datasets/imagenet{num_classes}_cls.npz'
         else:
             raise ValueError("Unsupported dataset. Dataset name should contain the number of classes, e.g., CIFAR10 or ImageNet30.")
-    elif 'eurosat' in dataset_name:
+    elif 'eurosat' in dataset_name.lower():
         num_classes = 10
         data_path = f'/home/vm03/Datasets/eurosat.npz'
 
@@ -201,10 +201,10 @@ if __name__ == '__main__':
 
     # Set manual epoch loop configuration
     epochs = 200
-    batch_size = 128
+    batch_size = 32
 
     # Repeat the data k times, datagen will transform
-    k = 3
+    k = 2
     y_aug = np.tile(y_train, (k, 1))
     X_aug = np.tile(X_train, (k, 1, 1, 1))
     
