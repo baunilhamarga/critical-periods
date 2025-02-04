@@ -178,23 +178,23 @@ if __name__ == '__main__':
     
     optimizers = [sgd, adamw, rmsprop, adagrad]
     
-    done = [(sgd.name, False)]
+    done = [(sgd.name, False), (adamw.name, False)]
     
     for optimizer in optimizers:
-        # Simulate k-times repetition by increasing the steps per epoch.
-        k = 2  # augmentation factor
-        num_samples_epoch = k * X_train.shape[0]
-        steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
-        print(f"{num_samples_epoch} samples per epoch (k={k}), grouped into batches of {batch_size}.", flush=True)
-        random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
-        func.load_or_create_weights(model, random_weights_path)
-
-        model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
-        
         for criterion_met in [False, True]:
             if (optimizer.name, criterion_met) in done:
-                print(f"Optimizer {optimizer.name} with criterion_met={criterion_met} already done. Skipping.")
-                break
+                print(f"Optimizer {optimizer.name} with baseline={criterion_met} already done. Skipping.")
+                continue
+            print(f"Testing {optimizer.name} with baseline={criterion_met}.")
+            # Simulate k-times repetition by increasing the steps per epoch.
+            k = 2  # augmentation factor
+            num_samples_epoch = k * X_train.shape[0]
+            steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
+            print(f"{num_samples_epoch} samples per epoch (k={k}), grouped into batches of {batch_size}.", flush=True)
+            random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
+            func.load_or_create_weights(model, random_weights_path)
+
+            model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
             # Get kernel layer names for later use.
             layer_names = get_kernel_layer_names(model)
             if initial_weights is None:
@@ -243,4 +243,5 @@ if __name__ == '__main__':
             # Evaluate the model after training.
             y_pred = model.predict(X_test, verbose=0)
             accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
+            print(f"Test {optimizer.name} with baseline={criterion_met}, k={k} complete.")
             print(f'Final accuracy: {accuracy:.4f}')
