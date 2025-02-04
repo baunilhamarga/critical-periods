@@ -178,7 +178,7 @@ if __name__ == '__main__':
     
     optimizers = [sgd, adamw, rmsprop, adagrad]
     
-    done = [(sgd.name, False), (adamw.name, False)]
+    done = [(sgd.name, False), (sgd.name, True), (adamw.name, False), (adamw.name, True), (rmsprop.name, False), (rmsprop.name, True), (adagrad.name, False)]
     
     for optimizer in optimizers:
         for criterion_met in [False, True]:
@@ -192,6 +192,7 @@ if __name__ == '__main__':
             steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
             print(f"{num_samples_epoch} samples per epoch (k={k}), grouped into batches of {batch_size}.", flush=True)
             random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
+            model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
             func.load_or_create_weights(model, random_weights_path)
 
             model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
@@ -243,5 +244,5 @@ if __name__ == '__main__':
             # Evaluate the model after training.
             y_pred = model.predict(X_test, verbose=0)
             accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
-            print(f"Test {optimizer.name} with baseline={criterion_met}, k={k} complete.")
+            print(f"Test {optimizer.name} complete.")
             print(f'Final accuracy: {accuracy:.4f}')
