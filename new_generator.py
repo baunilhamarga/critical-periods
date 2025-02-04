@@ -237,3 +237,8 @@ if __name__ == '__main__':
     y_pred = model.predict(X_test, verbose=0)
     accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
     print(f'Final accuracy: {accuracy:.4f}')
+    
+    # Save after training
+    weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
+    print(f"\nSaving model weights. Epoch {epochs}.")
+    model.save_weights(weights_path)
