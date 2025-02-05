@@ -205,7 +205,7 @@ if __name__ == '__main__':
             validation_freq=5
         )
         
-        if epoch in epochs_annealing:
+        if (epoch in epochs_annealing) or epoch % 10 == 0:
             weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
             print(f"\nSaving model weights. Epoch {epoch}.")
             model.save_weights(weights_path)

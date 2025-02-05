@@ -204,7 +204,7 @@ if __name__ == '__main__':
     batch_size = 32
 
     # Repeat the data k times, datagen will transform
-    k = 2
+    k = 3
     y_aug = np.tile(y_train, (k, 1))
     X_aug = np.tile(X_train, (k, 1, 1, 1))
     
