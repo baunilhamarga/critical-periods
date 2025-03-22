@@ -127,31 +127,34 @@ if __name__ == '__main__':
     # Create directory for saving weights if it doesn't exist
     os.makedirs(weights_dir, exist_ok=True)
 
-    if 'tiny' in dataset_name:
-        num_classes = 200
-        data_path = f'/home/vm03/Datasets/tiny_imagenet_train.npz'
-    elif 'imagenet' in dataset_name:
-        match = re.search(r'(\d+)', dataset_name)
-        if match:
-            num_classes = int(match.group(1))
-            data_path = f'/home/vm03/Datasets/imagenet{num_classes}_cls.npz'
-        else:
-            raise ValueError("Unsupported dataset. Dataset name should contain the number of classes, e.g., CIFAR10 or ImageNet30.")
-    elif 'eurosat' in dataset_name:
-        num_classes = 10
-        data_path = f'/home/vm03/Datasets/eurosat.npz'
-
-    # Load the dataset
-    data = np.load(data_path)
-    if 'X_val' in data:
-        X_train, y_train, X_test, y_test = data['X_train'], data['y_train'], data['X_val'], data['y_val']
+    if 'cifar' in dataset_name.lower():
+        X_train, y_train, X_test, y_test = func.cifar_resnet_data(cifar_type=int(dataset_name.split('CIFAR')[-1]))
     else:
-        X_train, y_train = data['X_train'], data['y_train']
-        X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.1, random_state=seed)
+        if 'tiny' in dataset_name:
+            num_classes = 200
+            data_path = f'~/Datasets/tiny_imagenet_train.npz'
+        elif 'imagenet' in dataset_name:
+            match = re.search(r'(\d+)', dataset_name)
+            if match:
+                num_classes = int(match.group(1))
+                data_path = f'~/Datasets/imagenet{num_classes}_cls.npz'
+            else:
+                raise ValueError("Unsupported dataset. Dataset name should contain the number of classes, e.g., CIFAR10 or ImageNet30.")
+        elif 'eurosat' in dataset_name:
+            num_classes = 10
+            data_path = f'/home/turing/Datasets/eurosat.npz'
+
+        # Load the dataset
+        data = np.load(data_path)
+        if 'X_val' in data:
+            X_train, y_train, X_test, y_test = data['X_train'], data['y_train'], data['X_val'], data['y_val']
+        else:
+            X_train, y_train = data['X_train'], data['y_train']
+            X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.1, random_state=seed)
     
-    # Convert y_train from int to one-hot encoding
-    y_train = np.eye(num_classes)[y_train.reshape(-1)]
-    y_test = np.eye(num_classes)[y_test.reshape(-1)]
+        # Convert y_train from int to one-hot encoding
+        y_train = np.eye(num_classes)[y_train.reshape(-1)]
+        y_test = np.eye(num_classes)[y_test.reshape(-1)]
 
     # Determinar num_classes baseado no dataset
     print(f"X_train: {X_train.shape}, y_train: {y_train.shape}, X_test: {X_test.shape}, y_test: {y_test.shape}")
