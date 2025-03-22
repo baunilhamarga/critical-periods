@@ -130,19 +130,19 @@ if __name__ == '__main__':
     if 'cifar' in dataset_name.lower():
         X_train, y_train, X_test, y_test = func.cifar_resnet_data(cifar_type=int(dataset_name.split('CIFAR')[-1]))
     else:
-        if 'tiny' in dataset_name:
+        if 'tiny' in dataset_name.lower():
             num_classes = 200
             data_path = f'~/Datasets/tiny_imagenet_train.npz'
-        elif 'imagenet' in dataset_name:
+        elif 'imagenet' in dataset_name.lower():
             match = re.search(r'(\d+)', dataset_name)
             if match:
                 num_classes = int(match.group(1))
                 data_path = f'~/Datasets/imagenet{num_classes}_cls.npz'
             else:
                 raise ValueError("Unsupported dataset. Dataset name should contain the number of classes, e.g., CIFAR10 or ImageNet30.")
-        elif 'eurosat' in dataset_name:
+        elif 'eurosat' in dataset_name.lower():
             num_classes = 10
-            data_path = f'/home/turing/Datasets/eurosat.npz'
+            data_path = f'~/Datasets/eurosat.npz'
 
         # Load the dataset
         data = np.load(data_path)
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
     # Set manual epoch loop configuration
     epochs = 200
-    batch_size = 128
+    batch_size = 32
 
     # Repeat the data k times, datagen will transform
     k = 3

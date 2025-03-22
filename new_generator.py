@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--architecture', type=str, default='ResNet56')
-    parser.add_argument('--dataset', type=str, default='CIFAR10')
+    parser.add_argument('--dataset', type=str, default='imagenet5')
     parser.add_argument('--weights', type=str, default='')
     parser.add_argument('--model_name', type=str, default='')
     parser.add_argument('--verbose', type=int, default=2, help='Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch')
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     weights_dir = args.weights if args.weights != '' else f'./weights/{dataset_name}/{architecture}'
     model_name = args.model_name
     verbose = args.verbose
-    #criterion_met = False if args.baseline == 'False' else True
+    criterion_met = False if args.baseline == 'False' else True
 
     model_name = architecture.split('/')[-1] if model_name == '' else model_name
     print(f"{model_name} {dataset_name}", flush=True)
@@ -131,10 +131,15 @@ if __name__ == '__main__':
         num_classes = 10
         data_path = f'/home/vm03/Datasets/eurosat.npz'
 
-    X_train, y_train, X_test, y_test = func.cifar_resnet_data(cifar_type=100)
-
-    #y_train = np.eye(num_classes)[y_train.reshape(-1)]
-    #y_test = np.eye(num_classes)[y_test.reshape(-1)]
+    data = np.load(data_path)
+    if 'X_val' in data:
+        X_train, y_train, X_test, y_test = data['X_train'], data['y_train'], data['X_val'], data['y_val']
+    else:
+        X_train, y_train = data['X_train'], data['y_train']
+        X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.1, random_state=seed)
+    
+    y_train = np.eye(num_classes)[y_train.reshape(-1)]
+    y_test = np.eye(num_classes)[y_test.reshape(-1)]
 
     print(f"X_train: {X_train.shape}, y_train: {y_train.shape}, X_test: {X_test.shape}, y_test: {y_test.shape}")
     num_classes = y_train.shape[1]
@@ -159,91 +164,81 @@ if __name__ == '__main__':
     else:
         model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
 
+    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
+    func.load_or_create_weights(model, random_weights_path)
+
+    lr = 0.01
+    sgd = keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    
     # Configure data augmentation using your custom generator
     datagen = func.generate_data_augmentation(X_train)
     lr_scheduler_callback = LearningRateScheduler(func.scheduler)
     callbacks = [lr_scheduler_callback]
 
     epochs = 200
-    batch_size = 128
+    batch_size = 32
+
+    # Simulate k-times repetition by increasing the steps per epoch.
+    k = 3  # augmentation factor
+    num_samples_epoch = k * X_train.shape[0]
+    steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
+    print(f"{num_samples_epoch} samples per epoch (k={k}), grouped into batches of {batch_size}.", flush=True)
 
     # Wrap the generator so that it repeats indefinitely.
     dataflow = infinite_generator(datagen.flow(X_train, y_train, batch_size=batch_size, seed=seed, shuffle=True))
-
-    lr = 0.01
-    sgd = keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
-    adamw = tf.keras.optimizers.experimental.AdamW(learning_rate=0.001, weight_decay=0.004, beta_1=0.9, beta_2=0.999, epsilon=1e-07)
-    rmsprop = tf.keras.optimizers.RMSprop(learning_rate=0.001, rho=0.9, momentum=0.0, epsilon=1e-07, centered=False)
-    adagrad = tf.keras.optimizers.Adagrad(learning_rate=0.001, initial_accumulator_value=0.1, epsilon=1e-07)
     
-    optimizers = [sgd, adamw, rmsprop, adagrad]
+    # Get kernel layer names for later use.
+    layer_names = get_kernel_layer_names(model)
+    if initial_weights is None:
+        save_initial_weights(model, layer_names)
+        
+    epochs_annealing = []
+    for epoch in range(1, epochs+1):
+        print(f"\nEpoch {epoch}/{epochs}", flush=True)
+        model.fit(
+            dataflow,
+            steps_per_epoch=steps_per_epoch,
+            epochs=epoch, initial_epoch=epoch - 1,
+            verbose=verbose, callbacks=callbacks,
+            validation_data=(X_test, y_test),
+            validation_freq=5
+        )
+        
+        if (epoch in epochs_annealing) or epoch % 10 == 0:
+            weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
+            print(f"\nSaving model weights. Epoch {epoch}.")
+            model.save_weights(weights_path)
+
+        if not criterion_met:
+            if check_rotation_angle_criterion(model, layer_names, window_size=5, epoch=epoch, epochs=epochs):
+                print(f"Criterion met at epoch {epoch}. Adjusting k value.")
+                # Change k to 1 and reconfigure steps_per_epoch accordingly.
+                k = 1
+                num_samples_epoch = k * X_train.shape[0]
+                steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
+                dataflow = infinite_generator(datagen.flow(X_train, y_train, batch_size=batch_size, seed=seed, shuffle=True))
+
+                cosine_distances_mean = []
+                criterion_met = True
+
+                weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
+                print(f"\nSaving model weights. Epoch {epoch}.")
+                model.save_weights(weights_path)
+
+                epochs_diff = epochs - epoch
+                annealing_ratio = [0.99, 0.95, 0.90, 0.85, 0.80, 0.50, 0.875]
+                for ratio in annealing_ratio:  
+                    annealing_epoch = epoch + math.ceil(epochs_diff * ratio)
+                    epochs_annealing.append(annealing_epoch)
+                    print(f"\nAnnealing ratio: {ratio}. Annealing epoch: {annealing_epoch}")
+
+    # Evaluate the model after training.
+    y_pred = model.predict(X_test, verbose=0)
+    accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
+    print(f'Final accuracy: {accuracy:.4f}')
     
-    done = [(sgd.name, False), (sgd.name, True), (adamw.name, False), (adamw.name, True), (rmsprop.name, False), (rmsprop.name, True), (adagrad.name, False)]
-    
-    for optimizer in optimizers:
-        for criterion_met in [False, True]:
-            if (optimizer.name, criterion_met) in done:
-                print(f"Optimizer {optimizer.name} with baseline={criterion_met} already done. Skipping.")
-                continue
-            print(f"Testing {optimizer.name} with baseline={criterion_met}.")
-            # Simulate k-times repetition by increasing the steps per epoch.
-            k = 2  # augmentation factor
-            num_samples_epoch = k * X_train.shape[0]
-            steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
-            print(f"{num_samples_epoch} samples per epoch (k={k}), grouped into batches of {batch_size}.", flush=True)
-            random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
-            model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
-            func.load_or_create_weights(model, random_weights_path)
-
-            model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
-            # Get kernel layer names for later use.
-            layer_names = get_kernel_layer_names(model)
-            if initial_weights is None:
-                save_initial_weights(model, layer_names)
-                
-            epochs_annealing = []
-            for epoch in range(1, epochs+1):
-                print(f"\nEpoch {epoch}/{epochs}", flush=True)
-                model.fit(
-                    dataflow,
-                    steps_per_epoch=steps_per_epoch,
-                    epochs=epoch, initial_epoch=epoch - 1,
-                    verbose=verbose, callbacks=callbacks,
-                    validation_data=(X_test, y_test),
-                    validation_freq=5
-                )
-                
-                if epoch in epochs_annealing:
-                    weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
-                    print(f"\nSaving model weights. Epoch {epoch}.")
-                    model.save_weights(weights_path)
-
-                if not criterion_met:
-                    if check_rotation_angle_criterion(model, layer_names, window_size=5, epoch=epoch, epochs=epochs):
-                        print(f"Criterion met at epoch {epoch}. Adjusting k value.")
-                        # Change k to 1 and reconfigure steps_per_epoch accordingly.
-                        k = 1
-                        num_samples_epoch = k * X_train.shape[0]
-                        steps_per_epoch = math.ceil(num_samples_epoch / batch_size)
-                        dataflow = infinite_generator(datagen.flow(X_train, y_train, batch_size=batch_size, seed=seed, shuffle=True))
-
-                        cosine_distances_mean = []
-                        criterion_met = True
-
-                        weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
-                        print(f"\nSaving model weights. Epoch {epoch}.")
-                        model.save_weights(weights_path)
-
-                        epochs_diff = epochs - epoch
-                        annealing_ratio = [0.99, 0.95, 0.90, 0.85, 0.80, 0.50, 0.875]
-                        for ratio in annealing_ratio:  
-                            annealing_epoch = epoch + math.ceil(epochs_diff * ratio)
-                            epochs_annealing.append(annealing_epoch)
-                            print(f"\nAnnealing ratio: {ratio}. Annealing epoch: {annealing_epoch}")
-
-            # Evaluate the model after training.
-            y_pred = model.predict(X_test, verbose=0)
-            accuracy = accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_pred, axis=1))
-            print(f"Test {optimizer.name} complete.")
-            print(f'Final accuracy: {accuracy:.4f}')
-            
+    # Save after training
+    weights_path = os.path.join(weights_dir, f'{model_name}_{dataset_name}_epoch_{epoch:02d}.weights.h5')
+    print(f"\nSaving model weights. Epoch {epochs}.")
+    model.save_weights(weights_path)
