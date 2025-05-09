@@ -8,6 +8,7 @@ nvvm
 weights/
 temp/
 logs/
+*.zip
 
 # Temporaty files
 tmp*
