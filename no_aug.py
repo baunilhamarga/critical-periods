@@ -15,8 +15,8 @@ if __name__ == '__main__':
     seed = 12227
     func.set_seeds(seed)  # Set seeds for repeatability
     
-    physical_devices = tf.config.list_physical_devices('GPU')
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    for gpu in tf.config.list_physical_devices('GPU'):
+        tf.config.experimental.set_memory_growth(gpu, True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--architecture', type=str, default='ResNet32')
@@ -29,6 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_path', type=str, default='', help='Path to save the output files')
     parser.add_argument('--verbose', type=int, default=2, help='Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch')
     parser.add_argument('--starting_epoch', type=int, default=1, help='Starting epoch for training')
+    parser.add_argument('--run', type=int, default=1, help='Run number for logging')
 
     args = parser.parse_args()
     architecture = args.architecture
@@ -41,6 +42,7 @@ if __name__ == '__main__':
     verbose = args.verbose
     output_path = args.output_path if args.output_path != '' else weights_dir
     starting_epoch = args.starting_epoch
+    run = args.run
 
     model_name = architecture.split('/')[-1] if model_name == '' else model_name
     print(f"{model_name} {dataset_name}", flush=True)
@@ -75,7 +77,7 @@ if __name__ == '__main__':
     y_aug = np.tile(y_train, (k, 1))
     X_aug = np.tile(X_train, (k, 1, 1, 1))
     
-    print(f"{X_aug.shape[0]} samples per epoch, grouped into batches of {batch_size}.", flush=True)
+    print(f"{X_aug.shape[0]} samples per epoch, grouped into batches of {batch_size}. Run {run}", flush=True)
     
     accuracies = []
     starting_epoch = starting_epoch
@@ -89,7 +91,13 @@ if __name__ == '__main__':
     for initial_epoch in range(starting_epoch, n_epochs+1):
         print(f"Current time: {datetime.datetime.now()}", flush=True)
         
-        log = pd.read_csv('./logs/no_aug_log.csv')
+        log_file_path = f'./logs/no_aug_log_{run}.csv'
+        if not os.path.exists(log_file_path):
+            os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+            log = pd.DataFrame(columns=['model', 'dataset', 'k', 'initial_epoch', 'accuracy'])
+            log.to_csv(log_file_path, index=False)
+        else:
+            log = pd.read_csv(log_file_path)
         
         while (initial_epoch - 1, model_name, dataset_name, k) in zip(log['initial_epoch'], log['model'], log['dataset'], log['k']):
             initial_epoch += 1
@@ -106,7 +114,7 @@ if __name__ == '__main__':
             'accuracy': None
         }
         
-        func.log_to_csv(log_entry, log_file_name='no_aug_log.csv')
+        func.log_to_csv(log_entry, log_file_name=f'no_aug_log_{run}.csv')
         
         # Load the epoch weights with augmentation
         if initial_epoch != 1:
@@ -138,7 +146,7 @@ if __name__ == '__main__':
             'accuracy': accuracy
         }
         
-        func.log_to_csv(log_entry, log_file_name='no_aug_log.csv', delete_duplicate=True)
+        func.log_to_csv(log_entry, log_file_name=f'no_aug_log_{run}.csv', delete_duplicate=True)
         
         # Save the model weights at the end of training
         print(f"Saving weights trained with k={k} from epoch {initial_epoch} to {n_epochs}.", flush=True)
