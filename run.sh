@@ -4,7 +4,17 @@
 # cd /path/to/your/script  
   
 # Execute the Python script with different arguments
-./utils/shell_scripts.sh no_aug.py --dataset cifar10 --architecture ResNet32
+export CUDA_VISIBLE_DEVICES=0
+./utils/shell_scripts.sh python no_aug.py
+./utils/shell_scripts.sh python no_aug.py
+./utils/shell_scripts.sh python no_aug.py
+./utils/shell_scripts.sh python no_aug.py
+export CUDA_VISIBLE_DEVICES=1
+./utils/shell_scripts.sh python no_aug.py
+./utils/shell_scripts.sh python no_aug.py
+./utils/shell_scripts.sh python no_aug.py
+./utils/shell_scripts.sh python no_aug.py
+
 # ./shell_scripts.sh -m main
 # ./utils/shell_scripts.sh imagenet50.py --dataset tiny_imagenet --architecture ResNet50
 # ./shell_scripts.sh -m subsampling.annealing --architecture ResNet18 --dataset CIFAR100 --epoch 199

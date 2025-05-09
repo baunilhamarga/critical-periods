@@ -1093,10 +1093,10 @@ def log_to_csv(log_entry, log_file_name='main.csv', log_dir='./logs', delete_dup
     
     df = pd.read_csv(log_file_path)
     
-    # If delete_duplicate is True, remove rows with duplicate values in the first three columns
+    # If delete_duplicate is True, remove rows with duplicate values in the first 4 columns
     if delete_duplicate:
-        df.drop_duplicates(subset=df.columns[:3], keep='last', inplace=True)
+        df.drop_duplicates(subset=df.columns[:4], keep='last', inplace=True)
 
     # Sort the dataframe by the initial keys
-    df.sort_values(by=updated_header[:3], inplace=True, ascending=True)
+    df.sort_values(by=updated_header[:4], inplace=True, ascending=True)
     df.to_csv(log_file_path, index=False)
