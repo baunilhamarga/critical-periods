@@ -68,7 +68,7 @@ if __name__ == '__main__':
         raise ValueError(f'Invalid model name: {model_name}.')
 
     # Path to random starting weights
-    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
+    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}.weights.h5')
     
     # Load or create the random starting weights using the seed
     func.load_or_create_weights(model, random_weights_path)

@@ -164,7 +164,7 @@ if __name__ == '__main__':
     else:
         model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
 
-    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}_.weights.h5')
+    random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}.weights.h5')
     func.load_or_create_weights(model, random_weights_path)
 
     lr = 0.01
