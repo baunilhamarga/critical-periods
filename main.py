@@ -13,7 +13,7 @@ if __name__ == '__main__':
     func.set_seeds(seed)  # Set seeds for repeatability
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--architecture', type=str, default='ResNet44', help='Model architecture to use')
+    parser.add_argument('--architecture', type=str, default='ResNet32', help='Model architecture to use')
     parser.add_argument('--dataset', type=str, default='CIFAR10', help='Dataset to use for training and evaluation')
     parser.add_argument('--weights', type=str, default='', help='Directory to save or load model weights')
     parser.add_argument('--model_name', type=str, default='', help='Name of the model')
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # Load a model
     N_layers = int(architecture.lower().split('resnet')[-1])
     num_classes = y_train.shape[1]
-    model = ResNetN.build_model(model_name, input_shape=(32, 32, 3), num_classes=num_classes, N_layers=N_layers)
+    model = ResNetN.build_model(model_name, input_shape=X_train[0].shape, num_classes=num_classes, N_layers=N_layers)
 
     # Path to random starting weights
     random_weights_path = os.path.join(weights_dir, f'@random_starting_weights_{model_name}.weights.h5')

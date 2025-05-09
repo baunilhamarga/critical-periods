@@ -19,7 +19,7 @@ if __name__ == '__main__':
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--architecture', type=str, default='ResNet44')
+    parser.add_argument('--architecture', type=str, default='ResNet32')
     parser.add_argument('--dataset', type=str, default='CIFAR10')
     parser.add_argument('--weights', type=str, default='')
     parser.add_argument('--model_name', type=str, default='')
